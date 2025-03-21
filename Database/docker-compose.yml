@@ -1,1 +1,68 @@
+services:
+  # PostgreSQL for User Service
+  postgres_user:
+    image: postgres:latest
+    container_name: postgres_user_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_service
+    ports:
+      - "5433:5432" # Changed port to avoid conflicts
+    volumes:
+      - pg_user_data:/var/lib/postgresql/data
+
+  # PostgreSQL for Booking Service
+  postgres_booking:
+    image: postgres:latest
+    container_name: postgres_booking_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: booking_service
+    ports:
+      - "5434:5432" # Changed port to avoid conflicts
+    volumes:
+      - pg_booking_data:/var/lib/postgresql/data
+
+  # MongoDB for Notification Service
+  mongo_notification:
+    image: mongo:latest
+    container_name: mongo_notification_db
+    restart: always
+    ports:
+      - "27018:27017" # Changed port to avoid conflicts
+    volumes:
+      - mongo_notification_data:/data/db
+
+  # MongoDB for Event Service
+  mongo_event:
+    image: mongo:latest
+    container_name: mongo_event_db
+    restart: always
+    ports:
+      - "27019:27017" # Changed port to avoid conflicts
+    volumes:
+      - mongo_event_data:/data/db
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management # Includes management UI
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672" # Default RabbitMQ messaging port
+      - "15672:15672" # Management UI port
+
+volumes:
+  pg_user_data:
+  pg_booking_data:
+  mongo_notification_data:
+  mongo_event_data:
+
 
