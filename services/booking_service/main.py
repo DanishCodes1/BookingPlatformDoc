@@ -38,22 +38,28 @@ class BookingCreate(BaseModel):
     user_id: str = Field(..., example="user123")
     event_id: str = Field(..., example="event456")
     tickets: int = Field(..., gt=0, example=2)  # Must be > 0
-    status: Optional[str] = "PENDING"  # Now optional
+    status: Optional[str] = "PENDING"
 
 # Mock Payment Gateway
 def process_payment(user_id: str, amount: float) -> bool:
-    return True  # Simulated successful payment
+    """
+    Simulate payment processing: always returns True for success.
+    """
+    return True
 
 # Publish Notification to RabbitMQ
 def publish_notification(booking_id: str, user_email: str, status: str):
+    """
+    Publish a notification message to RabbitMQ when booking is confirmed.
+    """
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_HOST))
         channel = connection.channel()
-        channel.queue_declare(queue=RABBITMQ_QUEUE, durable=True)  # Ensure durability matches
+        channel.queue_declare(queue=RABBITMQ_QUEUE, durable=True)
         message = json.dumps({
-            "recipient": user_email,  # Use "recipient" instead of "user_email"
-            "subject": "Booking Confirmation",  # Add subject
-            "message": f"Your booking (ID: {booking_id}) has been {status}."  # Add message
+            "recipient": user_email,
+            "subject": "Booking Confirmation",
+            "message": f"Your booking (ID: {booking_id}) has been {status}."
         })
         channel.basic_publish(exchange="", routing_key=RABBITMQ_QUEUE, body=message)
         connection.close()
@@ -64,11 +70,25 @@ def publish_notification(booking_id: str, user_email: str, status: str):
 # Create Booking
 @app.post("/bookings/")
 async def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
+    """
+    1. Check event availability in event_service
+    2. Process payment (mock)
+    3. Update event tickets in event_service
+    4. Fetch user email from user_service
+    5. Save booking to local database
+    6. Publish notification to RabbitMQ
+    """
     try:
-        logger.info("📩 Received Booking Request: %s", booking.model_dump())  # Use model_dump()
+        logger.info("📩 Received Booking Request: %s", booking.model_dump())
 
-        # Validate Event Availability
-        event_response = requests.get(f"http://localhost:8002/events/{booking.event_id}/availability")
+        # ---------------------------------------------------------------------
+        # IMPORTANT: Replace localhost with Docker service names & internal ports
+        # ---------------------------------------------------------------------
+        EVENT_SERVICE_URL = "http://event_service:8002"
+        USER_SERVICE_URL  = "http://user_service:8001"
+
+        # 1. Validate Event Availability
+        event_response = requests.get(f"{EVENT_SERVICE_URL}/events/{booking.event_id}/availability")
         if event_response.status_code != 200:
             raise HTTPException(status_code=404, detail="Event not found")
 
@@ -76,19 +96,19 @@ async def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
         if booking.tickets > available_tickets:
             raise HTTPException(status_code=400, detail="Not enough tickets available")
 
-        # Process Payment
-        if not process_payment(booking.user_id, booking.tickets * 10):  
+        # 2. Process Payment
+        if not process_payment(booking.user_id, booking.tickets * 10):
             raise HTTPException(status_code=400, detail="Payment failed")
 
-        # Update Event Tickets
+        # 3. Update Event Tickets
         update_response = requests.put(
-            f"http://localhost:8002/events/{booking.event_id}/update-tickets?tickets_booked={booking.tickets}"
+            f"{EVENT_SERVICE_URL}/events/{booking.event_id}/update-tickets?tickets_booked={booking.tickets}"
         )
         if update_response.status_code != 200:
             raise HTTPException(status_code=500, detail="Failed to update event tickets")
 
-        # Fetch User Email
-        user_response = requests.get(f"http://localhost:8001/users/{booking.user_id}")
+        # 4. Fetch User Email
+        user_response = requests.get(f"{USER_SERVICE_URL}/users/{booking.user_id}")
         if user_response.status_code != 200:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -96,10 +116,8 @@ async def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
         if not user_email:
             raise HTTPException(status_code=500, detail="User email not found")
 
-        # Assign Booking ID if Not Provided
-        booking_id = str(uuid.uuid4())[:10]  # Proper random ID
-
-        # Save Booking to Database
+        # 5. Assign Booking ID & Save to Database
+        booking_id = str(uuid.uuid4())[:10]
         db_booking = Booking(
             booking_id=booking_id,
             user_id=booking.user_id,
@@ -111,7 +129,7 @@ async def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_booking)
 
-        # Publish Notification
+        # 6. Publish Notification
         publish_notification(booking_id, user_email, "CONFIRMED")
 
         return {"message": "✅ Booking confirmed successfully", "booking_id": booking_id}
@@ -127,5 +145,8 @@ async def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
 # Get All Bookings
 @app.get("/bookings/")
 def get_bookings(db: Session = Depends(get_db)):
+    """
+    Retrieve all bookings from the local database.
+    """
     bookings = db.query(Booking).all()
     return bookings

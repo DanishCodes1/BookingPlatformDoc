@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # User Service
+  user_service:
+    build:
+      context: ./services/user_service
+    container_name: user_service
+    restart: always
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres_user
+    environment:
+      DATABASE_URL: postgresql://admin:password@postgres_user:5432/user_service
+
+  # Event Service
+  event_service:
+     build:
+       context: ./services/event_service
+     container_name: event_service
+     restart: always
+     ports:
+      - "8002:8002"
+     depends_on:
+      - mongo_event
+     environment:
+      - MONGO_URI=mongodb://mongo_event:27017/
+
+
+  # Booking Service
+  booking_service:
+    build:
+      context: ./services/booking_service
+    container_name: booking_service
+    restart: always
+    ports:
+      - "8003:8003"
+    depends_on:
+      - postgres_booking
+    environment:
+      - DATABASE_URL=postgresql://admin:password@postgres_booking:5432/booking_service
+
+  # Notification Service
+  notification_service:
+    build:
+      context: ./services/notification_service
+    container_name: notification_service
+    restart: always
+    ports:
+      - "8004:8004"
+    depends_on:
+      - mongo_notification
+
+  # Frontend Service
+  frontend_service:
+    build:
+      context: ./frontend
+    container_name: frontend_service
+    restart: always
+    ports:
+      - "3000:3000"
+
+  # PostgreSQL for User Service
+  postgres_user:
+    image: postgres:latest
+    container_name: postgres_user_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_service
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_user_data:/var/lib/postgresql/data
+
+  # PostgreSQL for Booking Service
+  postgres_booking:
+    image: postgres:latest
+    container_name: postgres_booking_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: booking_service
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_booking_data:/var/lib/postgresql/data
+
+  # MongoDB for Notification Service
+  mongo_notification:
+    image: mongo:latest
+    container_name: mongo_notification_db
+    restart: always
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_notification_data:/data/db
+
+  # MongoDB for Event Service
+  mongo_event:
+    image: mongo:latest
+    container_name: mongo_event_db
+    restart: always
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_event_data:/data/db
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  pg_user_data:
+  pg_booking_data:
+  mongo_notification_data:
+  mongo_event_data:

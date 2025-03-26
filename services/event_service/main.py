@@ -1,10 +1,11 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pymongo import MongoClient
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
-app = FastAPI()
 
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,8 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB Connection
-MONGO_URI = "mongodb://localhost:27019/"
+# Get the Mongo URI from an environment variable (default to the Docker service name)
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo_event:27017/")
 client = MongoClient(MONGO_URI)
 db = client.event_service
 events_collection = db.events
