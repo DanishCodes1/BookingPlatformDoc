@@ -1,6 +1,4 @@
 fastapi
 uvicorn
 pymongo
-smtplib
-email
 pika
