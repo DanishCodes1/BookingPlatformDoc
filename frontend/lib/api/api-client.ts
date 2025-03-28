@@ -2,11 +2,11 @@ import axios from 'axios';
 
 // Base URLs for each service
 const API_URLS = {
-    user: process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:8001',
-    event: process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || 'http://localhost:8002',
-    booking: process.env.NEXT_PUBLIC_BOOKING_SERVICE_URL || 'http://localhost:8003',
-    notification: process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || 'http://localhost:8004'
-};
+    user: process.env.NEXT_PUBLIC_USER_SERVICE_URL || '/api/users',
+    event: process.env.NEXT_PUBLIC_EVENT_SERVICE_URL || '/api/events',
+    booking: process.env.NEXT_PUBLIC_BOOKING_SERVICE_URL || '/api/bookings',
+    notification: process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || '/api/notifications',
+  };
 
 // Create axios instances for each service
 export const userApi = axios.create({

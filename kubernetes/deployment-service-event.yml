@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-service
+  namespace: onlineeventbooking-danish
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-service
+  template:
+    metadata:
+      labels:
+        app: event-service
+    spec:
+      containers:
+      - name: event-service
+        image: danish111/event-service:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MONGO_EVENT_URI
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-service
+  namespace: onlineeventbooking-danish
+spec:
+  selector:
+    app: event-service
+  ports:
+    - port: 8002
+      targetPort: 8002
