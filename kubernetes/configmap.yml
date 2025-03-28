@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: onlineeventbooking-danish
+data:
+  USER_DB_URL: postgresql://admin:password@postgres-user:5432/user_service
+  BOOKING_DB_URL: postgresql://admin:password@postgres-booking:5432/booking_service
+  MONGO_EVENT_URI: mongodb://mongo-event:27017/
+  MONGO_NOTIFICATION_URI: mongodb://mongo-notification:27018/

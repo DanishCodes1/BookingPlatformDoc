@@ -16,7 +16,7 @@ app = FastAPI()
 # Add CORS middleware to allow requests from your front end
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://eventbooking.local"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
